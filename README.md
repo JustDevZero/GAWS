@@ -66,7 +66,7 @@ For example:
 
 ```gaws python inventory_access.py```
 
-If you run gaws for first time, it will show you a wizard to fill with default parameters, that are going yo be stored on ~/.gaws/.config.ini
+If you run gaws for first time, it will show you a wizard to fill with default parameters, that are going yo be stored on ~/.gaws/config.ini
 
 And that's it, it will crawl the ini file and execute inventory_access.py against each one of the accounts.
 
