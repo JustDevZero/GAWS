@@ -208,7 +208,7 @@ class InventoryInstances:
                                'Public IP': total_public_ip_number,
                                'Private IP': total_private_ip_number,
                                'Carrier IP': total_carrier_ip_number,
-                               'IPv5': total_ipv6_number,
+                               'IPv6': total_ipv6_number,
 
                            })
 
@@ -221,7 +221,7 @@ class InventoryInstances:
                                'Public IP': total_public_ip_number,
                                'Private IP': total_private_ip_number,
                                'Carrier IP': total_carrier_ip_number,
-                               'IPv5': total_ipv6_number,
+                               'IPv6': total_ipv6_number,
 
                            })
         exit('Output can only be csv or json.')
