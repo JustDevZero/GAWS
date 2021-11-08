@@ -22,6 +22,8 @@ https://aws.amazon.com/blogs/security/how-to-use-g-suite-as-external-identity-pr
 * Code, issues, tests: https://github.com/JustDevZero/GAWS
 
 
+----
+
 **HOW TO INSTALL IT?**
 
 First of all, make sure to have *AWS CLI* installed:
@@ -44,6 +46,7 @@ Now, add symbolic link somewhere in your path *gaws* command, for example:
 
 ```ln -s ~/.virtualenvs/gaws/bin/gaws ~/.local/bin/gaws```
 
+----
 
 **How to use it?**
 
