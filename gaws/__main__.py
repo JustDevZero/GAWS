@@ -154,6 +154,7 @@ class GAWS:
         parser.add_argument('--resolve-aliases', dest="resolve_aliases", action='store_true')
         parser.add_argument('--no-cache', dest="store_cache", action='store_false')
         parser.add_argument('--client', '-c', action='append', type=str, dest='clients', help="Can be used multiple times to some clients instead of all.")
+        parser.add_argument('--all-clients', dest="all_clients", action='store_true')
         # parser.add_argument('--nuke', '-n', dest="nuke", action='store_true')
         parser.add_argument('--expand-vars', '-e', dest="expandvars", action='store_true', help="Expand bash variables instead of showing them.")
         group = parser.add_mutually_exclusive_group()
@@ -213,11 +214,15 @@ class GAWS:
         if not _clients:
             exit('No client found on gaws.ini')
 
-        if not self.args.clients:
-            exit('To avoid oopsies, you need to specify a list of clients, example: --client client1 --client client2')
+        if not self.args.clients and not self.args.all_clients:
+            exit('To avoid oopsies, you need to specify a list of clients, example: --client client1 --client client2 or be brave and use --all-clients.')
 
-        non_existent_clients = [x for x in self.args.clients if x not in _clients]
-        self.clients = [x for x in self.args.clients if x in _clients]
+        search_clients = self.args.clients
+        if self.args.all_clients:
+            search_clients = _clients
+
+        non_existent_clients = [x for x in search_clients if x not in _clients]
+        self.clients = [x for x in search_clients if x in _clients]
 
         if non_existent_clients:
             non_str = ', '.join(non_existent_clients)
@@ -288,7 +293,7 @@ class GAWS:
             self.preferences.write(configfile)
 
     def should_refresh_credentials(self, user, role, idp_id, sp_id, aws_account_id, parent_aws_account_id, duration):
-        if not self.store_cache:
+        if not self.args.store_cache:
             return True
         if not self.previous_account_id:
             return True
