@@ -391,8 +391,7 @@ class GAWS:
             self.set_password(user, password)
 
         environ = deepcopy(os.environ)
-
-        role_arn = f"arn:aws:iam::{aws_account_id}:role/{role}"
+        role_arn = f"arn:aws:iam::{parent_aws_account_id}:role/{role}"
         self.log.debug(f'Trying to assume role {role_arn} with google user {user}.')
         cli_args = []
         cli_args.extend(['--role-arn', role_arn])

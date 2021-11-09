@@ -44,6 +44,7 @@ class InventoryInstances:
         """)
         self.args = parser.parse_args()
         _pre_filters = {}
+        self.args.filters = self.args.filters or {}
         for name, value in self.args.filters:
             _pre_filters.setdefault(name, [])
             _pre_filters[name].append(value)
