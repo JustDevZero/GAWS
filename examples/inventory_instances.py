@@ -111,8 +111,9 @@ class InventoryInstances:
             self.log.debug(f'END Getting all instances for region {region_name}')
         return instances
 
-    def export_as_csv(self, file_name, exportable_data, ip_types=None):
+    def export_as_csv(self, file_name, exportable_data, ip_types=None, delimiter=None):
         ip_types = ip_types or {}
+        delimiter = delimiter or ','
         headers = ['InstanceId', 'HostId', 'Region', 'AvailabilityZone']
 
         for ip_type, quantity in ip_types.items():
@@ -122,7 +123,7 @@ class InventoryInstances:
             for num in range(1, quantity + 1):
                 headers.append(f'{ip_type} {num}')
 
-        writer = csv.DictWriter(open(file_name), fieldnames=headers)
+        writer = csv.DictWriter(open(file_name), fieldnames=headers, delimiter=delimiter)
         writer.writeheader()
         writer.writerows(exportable_data)
 
