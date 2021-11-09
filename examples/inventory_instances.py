@@ -123,7 +123,7 @@ class InventoryInstances:
             for num in range(1, quantity + 1):
                 headers.append(f'{ip_type} {num}')
 
-        writer = csv.DictWriter(open(file_name), fieldnames=headers, delimiter=delimiter)
+        writer = csv.DictWriter(open(file_name, 'w'), fieldnames=headers, delimiter=delimiter)
         writer.writeheader()
         writer.writerows(exportable_data)
 
