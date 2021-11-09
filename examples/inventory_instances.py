@@ -201,7 +201,7 @@ class InventoryInstances:
             with open(file_name, 'w') as json_file:
                 return self.export_as_csv(file_name,
                            exportable_data,
-                           separator="\t",
+                           delimiter="\t",
                            ip_types={
                                'Public IP': total_public_ip_number,
                                'Private IP': total_private_ip_number,
@@ -214,7 +214,7 @@ class InventoryInstances:
             with open(file_name, 'w') as json_file:
                 return self.export_as_csv(file_name,
                            exportable_data,
-                           separator=',',
+                           delimiter=',',
                            ip_types={
                                'Public IP': total_public_ip_number,
                                'Private IP': total_private_ip_number,
