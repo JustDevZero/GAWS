@@ -187,9 +187,6 @@ class InventoryInstances:
                 total_ipv6_number = max(total_ipv6_number, len(ipv6_ips))
                 total_carrier_ip_number = max(total_carrier_ip_number, len(carrier_ips))
 
-        if not exportable_data:
-            return
-
         if not self.args.output_file:
             self.log.info(json.dumps(exportable_data, indent=4))
             return
