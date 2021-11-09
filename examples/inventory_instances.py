@@ -118,6 +118,16 @@ class InventoryInstances:
         self._credentials = response.get('Credentials') or {}
         return self._credentials
 
+    def ec2_client(self, region_name=None):
+        credentials = self.credentials
+        client_params = {}
+        if credentials:
+            client_params['aws_access_key_id'] = credentials['AccessKeyId']
+            client_params['aws_secret_access_key'] = credentials['SecretAccessKey']
+            client_params['aws_session_token'] = credentials['SessionToken']
+
+        return boto3.client('ec2', region_name=region_name, **client_params)
+
     def describe_instances(self, region_name):
 
         credentials = self.credentials
@@ -127,7 +137,7 @@ class InventoryInstances:
             client_params['aws_secret_access_key'] = credentials['SecretAccessKey']
             client_params['aws_session_token'] = credentials['SessionToken']
 
-        ec2 = boto3.client('ec2', region_name=region_name, **client_params)
+        ec2 = self.ec2_client(region_name=region_name)
 
         self.extra_params = self.extra_params or {}
         NextToken = None
@@ -141,14 +151,7 @@ class InventoryInstances:
 
         while NextToken:
             self.extra_params['NextToken'] = NextToken
-            credentials = self.credentials
-            client_params = {}
-
-            if credentials:
-                client_params['aws_access_key_id'] = credentials['AccessKeyId']
-                client_params['aws_secret_access_key'] = credentials['SecretAccessKey']
-                client_params['aws_session_token'] = credentials['SessionToken']
-                ec2 = boto3.client('ec2', region_name=region_name, **client_params)
+            ec2 = self.ec2_client(region_name=region_name)
             try:
                 response = ec2.describe_instances(**self.extra_params)
                 NextToken = response.get('NextToken')
