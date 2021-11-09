@@ -293,7 +293,7 @@ class InventoryInstances:
                                'IPv6': total_ipv6_number,
 
                            })
-        exit('Output can only be csv or json.')
+        exit('Output can only be tsv, csv or json.')
 
 
 
