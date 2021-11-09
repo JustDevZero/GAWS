@@ -281,7 +281,7 @@ class GAWS:
             'user': self.default_user,
         }
 
-        if not self.args.preference_file.parent().exists():
+        if not self.args.preference_file.parent.exists():
             self.args.preference_file.parent.mkdir(parents=True)
 
         with self.args.preference_file.open('w') as configfile:
