@@ -273,7 +273,7 @@ class GAWS:
 
         self.preferences = ConfigParser()
 
-        self.preferences['gauth'] = {
+        self.preferences['gaws'] = {
             'idp_id': self.default_idp_id,
             'sp_id': self.default_sp_id,
             'region': self.default_region,
@@ -437,7 +437,7 @@ class GAWS:
 
             return False
 
-    def run_process(self, profile, user, role, region, aws_account_id, extra_parameters):
+    def run_process(self, profile, user, role, region, aws_account_id, extra_parameters, expand_vars=False):
         if not self.command:
             exit("No command have been provided.")
 
@@ -451,7 +451,7 @@ class GAWS:
         command = deepcopy(self.command)
         command.extend(extra_parameters)
 
-        if self.args.expandvars:
+        if self.args.expandvars or expand_vars:
             command = [expandvars(x) for x in self.command]
             command.extend(extra_parameters)
 
@@ -483,18 +483,19 @@ class GAWS:
     def iterate_clients(self):
 
         for client in self.clients:
-            role = self.args.gauth_content.get(client, 'role_name', fallback=self.default_role)
-            regions = self.args.gauth_content.get(client, 'region', fallback=None)
-            sso_region = self.args.gauth_content.get(client, 'sso_region', fallback=None) or self.default_sso_region
-            idp_id = self.args.gauth_content.get(client, 'idp_id', fallback=None) or self.default_idp_id
-            sp_id = self.args.gauth_content.get(client, 'sp_id', fallback=None) or self.default_sp_id
-            user = self.args.gauth_content.get(client, 'user', fallback=None) or self.default_user
-            aws_account_id = self.args.gauth_content.get(client, 'aws_account_id', fallback=None)
-            parent_aws_account_id = self.args.gauth_content.get(client, 'parent_aws_account_id', fallback=self.default_account)
+            role = self.args.gaws_content.get(client, 'role_name', fallback=self.default_role)
+            regions = self.args.gaws_content.get(client, 'region', fallback=None)
+            sso_region = self.args.gaws_content.get(client, 'sso_region', fallback=None) or self.default_sso_region
+            idp_id = self.args.gaws_content.get(client, 'idp_id', fallback=None) or self.default_idp_id
+            sp_id = self.args.gaws_content.get(client, 'sp_id', fallback=None) or self.default_sp_id
+            user = self.args.gaws_content.get(client, 'user', fallback=None) or self.default_user
+            aws_account_id = self.args.gaws_content.get(client, 'aws_account_id', fallback=None)
+            expand_vars = self.args.gaws_content.get(client, 'expand_vars', fallback='').lower() == 'true'
+            parent_aws_account_id = self.args.gaws_content.get(client, 'parent_aws_account_id', fallback=self.default_account)
             if parent_aws_account_id and parent_aws_account_id.lower() == 'aws_account_id':
                 parent_aws_account_id = aws_account_id
-            duration = try_int(self.args.gauth_content.get(client, 'duration', fallback=self.default_duration))
-            extra_parameters = self.args.gauth_content.get(client, 'extra_parameters', fallback='')
+            duration = try_int(self.args.gaws_content.get(client, 'duration', fallback=self.default_duration))
+            extra_parameters = self.args.gaws_content.get(client, 'extra_parameters', fallback='')
             extra_parameters = shlex.split(extra_parameters) if extra_parameters else []
             duration = duration if duration > 0 else AWS_DEFAULT_DURATION
             profile = 'default'
@@ -529,7 +530,10 @@ class GAWS:
                 continue
 
             for region in regions:
-                self.run_process(profile, user, role, region, aws_account_id, extra_parameters)
+                region_extra_parameters = self.args.gaws_content.get(client, f'{region}_extra_parameters', fallback='')
+                region_extra_parameters = shlex.split(region_extra_parameters) if region_extra_parameters else []
+                used_parameters = region_extra_parameters or extra_parameters
+                self.run_process(profile, user, role, region, aws_account_id, used_parameters, expand_vars)
 
             self.previous_sp_id = sp_id
             self.previous_idp_id = idp_id
@@ -541,7 +545,7 @@ class GAWS:
 
 def main():
     try:
-        gl = GauthLoader()
+        gl = GAWS()
         if not gl.command:
             exit('No command provided')
         gl.iterate_clients()
