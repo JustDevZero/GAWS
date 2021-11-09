@@ -69,8 +69,8 @@ class InventoryInstances:
                 'Filters': filters
             }
 
-    def check_expired(self):
-        if not self.are_credentials_expired:
+    def are_credentials_expired(self):
+        if not self._credentials:
             return True
         if 'Expiration' not in self._credentials:
             return True
