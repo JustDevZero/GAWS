@@ -6,7 +6,7 @@ import logging.handlers
 import os
 import sys
 from pathlib import Path
-
+import datetime
 import boto3
 
 
@@ -25,12 +25,15 @@ class InventoryInstances:
     arguments = None
     log = logging.getLogger('inventory_instances')
     extra_params = None
+    caller_identity = None
+    _credentials = None
 
     def __init__(self):
         handler = logging.StreamHandler(sys.stdout)
         self.log.addHandler(handler)
         parser = argparse.ArgumentParser()
         parser.add_argument('--region', '-r', action='append', type=str, dest='regions', help='List of regions to be used, can be used multiple times.')
+        parser.add_argument('--external-id', '-e', type=str, dest='external_id', help='External ID provided by the client.')
         parser.add_argument('--instance-id', '-i', action='append', type=str, dest='instance_ids', help='List of instance ids, can be used multiple times.')
         parser.add_argument('--filter', '-f', action='append', metavar="KEY=VALUE", nargs='+', dest='filters', help="""List of filters to use, example:
         network-interface.addresses.association.public-ip 1.1.1.1 or
@@ -66,9 +69,65 @@ class InventoryInstances:
                 'Filters': filters
             }
 
+    def check_expired(self):
+        if not self.are_credentials_expired:
+            return True
+        if 'Expiration' not in self._credentials:
+            return True
+        expire_date = self._credentials['Expiration'] - datetime.timedelta(minutes=1)
+        expire_date = expire_date.replace(tzinfo=datetime.timezone.utc)
+        now = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
+        return expire_date > now
+
+    @property
+    def credentials(self):
+        if not self.are_credentials_expired():
+            return self._credentials
+
+        sts = boto3.client('sts')
+        self.caller_identity = sts.get_caller_identity()
+        destination_account = os.environ.get('AWS_ACCOUNT_ID')
+        caller_account = os.environ.get('Account')
+
+        if caller_account == destination_account:
+            return {}
+
+        aws_role_arn = os.environ.get('AWS_ROLE_ARN')
+        aws_role_session_name = os.environ.get('AWS_ROLE_SESSION_NAME')
+
+        if not aws_role_arn:
+            return {}
+
+        if not aws_role_session_name:
+            _rest, aws_role_session_name = aws_role_arn.split('role/')
+
+        extra_params = {}
+        if self.args.external_id:
+            extra_params['external_id'] = self.args.external_id
+
+        try:
+            response = sts.assume_role(
+                RoleArn=aws_role_arn,
+                RoleSessionName=aws_role_session_name,
+                DurationSeconds=AWS_DEFAULT_DURATION,
+                **extra_params
+            )
+        except BaseException as excp:
+            self.log.exception(excp)
+            return {}
+        self._credentials = response.get('Credentials') or {}
+        return self._credentials
+
     def describe_instances(self, region_name):
 
-        ec2 = boto3.client('ec2', region_name=region_name)
+        credentials = self.credentials
+        client_params = {}
+        if credentials:
+            client_params['aws_access_key_id'] = credentials['AccessKeyId']
+            client_params['aws_secret_access_key'] = credentials['SecretAccessKey']
+            client_params['aws_session_token'] = credentials['SessionToken']
+
+        ec2 = boto3.client('ec2', region_name=region_name, **client_params)
 
         self.extra_params = self.extra_params or {}
         NextToken = None
@@ -82,6 +141,14 @@ class InventoryInstances:
 
         while NextToken:
             self.extra_params['NextToken'] = NextToken
+            credentials = self.credentials
+            client_params = {}
+
+            if credentials:
+                client_params['aws_access_key_id'] = credentials['AccessKeyId']
+                client_params['aws_secret_access_key'] = credentials['SecretAccessKey']
+                client_params['aws_session_token'] = credentials['SessionToken']
+                ec2 = boto3.client('ec2', region_name=region_name, **client_params)
             try:
                 response = ec2.describe_instances(**self.extra_params)
                 NextToken = response.get('NextToken')

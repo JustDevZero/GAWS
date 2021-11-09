@@ -297,12 +297,14 @@ class GAWS:
             return True
         if not self.previous_account_id:
             return True
+        if not self.previous_parent_aws_account_id:
+            return True
         if self.previous_idp_id != idp_id:
             return True
         if self.previous_sp_id != sp_id:
             return True
-        if self.previous_account_id != aws_account_id:
-            return True
+        # if self.previous_account_id != aws_account_id:
+        #     return True
         if self.previous_role != role:
             return True
         if self.previous_user != user:
@@ -409,8 +411,7 @@ class GAWS:
         if self.args.resolve_aliases:
             cli_args.extend(['--resolve-aliases'])
 
-        if profile != 'default':
-            cli_args.extend(['--profile', profile])
+        cli_args.extend(['--profile', profile])
 
         try:
             aws_google_auth.exit_if_unsupported_python()
@@ -441,7 +442,7 @@ class GAWS:
 
             return False
 
-    def run_process(self, profile, user, role, region, aws_account_id, extra_parameters, expand_vars=False):
+    def run_process(self, profile, user, role, region, aws_account_id, extra_parameters, duration, expand_vars=False):
         if not self.command:
             exit("No command have been provided.")
 
@@ -451,6 +452,8 @@ class GAWS:
         os.environ['AWS_ROLE_ARN'] = f"arn:aws:iam::{aws_account_id}:role/{role}"
         os.environ['AWS_ROLE_SESSION_NAME'] = user
         os.environ['AWS_REGION_NAME'] = region
+        os.environ['AWS_ACCOUNT_ID'] = aws_account_id
+        os.environ['AWS_DEFAULT_DURATION'] = duration
 
         command = deepcopy(self.command)
         command.extend(extra_parameters)
@@ -537,7 +540,7 @@ class GAWS:
                 region_extra_parameters = self.args.gaws_content.get(client, f'{region}_extra_parameters', fallback='')
                 region_extra_parameters = shlex.split(region_extra_parameters) if region_extra_parameters else []
                 used_parameters = region_extra_parameters or extra_parameters
-                self.run_process(profile, user, role, region, aws_account_id, used_parameters, expand_vars)
+                self.run_process(profile, user, role, region, aws_account_id, used_parameters, duration, expand_vars=expand_vars)
 
             self.previous_sp_id = sp_id
             self.previous_idp_id = idp_id
