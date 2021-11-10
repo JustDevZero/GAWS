@@ -12,6 +12,10 @@ from pathlib import Path
 import boto3
 
 
+LOGGER = logging.get('inventory_instances')
+logging.basicConfig(filename=sys.stdout, level=logging.INFO)
+
+
 def try_int(value):
     try:
         return int(value)
@@ -125,13 +129,6 @@ class InventoryInstances:
 
     def describe_instances(self, region_name):
 
-        credentials = self.credentials
-        client_params = {}
-        if credentials:
-            client_params['aws_access_key_id'] = credentials['AccessKeyId']
-            client_params['aws_secret_access_key'] = credentials['SecretAccessKey']
-            client_params['aws_session_token'] = credentials['SessionToken']
-
         ec2 = self.ec2_client(region_name=region_name)
 
         self.extra_params = self.extra_params or {}
@@ -141,8 +138,8 @@ class InventoryInstances:
         try:
             response = ec2.describe_instances(**self.extra_params)
             NextToken = response.get('NextToken')
-        except BaseException:
-            pass # fail silently
+        except BaseException as excp:
+            LOGGER.exception(excp)
 
         while NextToken:
             self.extra_params['NextToken'] = NextToken
@@ -151,9 +148,8 @@ class InventoryInstances:
                 response = ec2.describe_instances(**self.extra_params)
                 NextToken = response.get('NextToken')
                 reservations.extend(response.get('Reservations'))
-            except BaseException:
-                # fail silently
-                pass
+            except BaseException as excp:
+                LOGGER.exception(excp)
         return reservations
 
     def get_opted_regions(self):
