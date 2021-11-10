@@ -313,7 +313,7 @@ class GAWS:
             return True
 
         saml_file = self.saml_cache_file(idp_id)
-        if not saml_file.exist():
+        if not saml_file.exists():
             return True
 
         elements = ET.XML(saml_file.read_text())
