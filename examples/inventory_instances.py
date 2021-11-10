@@ -12,7 +12,6 @@ from pathlib import Path
 import boto3
 
 
-LOGGER = logging.get('inventory_instances')
 logging.basicConfig(filename=sys.stdout, level=logging.INFO)
 
 
@@ -36,6 +35,7 @@ class InventoryInstances:
     def __init__(self):
         handler = logging.StreamHandler(sys.stdout)
         self.log.addHandler(handler)
+        self.log.setLevel(logging.INFO)
         parser = argparse.ArgumentParser()
         parser.add_argument('--region', '-r', action='append', type=str, dest='regions', help='List of regions to be used, can be used multiple times.')
         parser.add_argument('--external-id', '-e', type=str, dest='external_id', help='External ID provided by the client.')
@@ -111,6 +111,8 @@ class InventoryInstances:
                 DurationSeconds=AWS_DEFAULT_DURATION,
                 **extra_params
             )
+            self.log.info('Assumed role')
+            self.log.info(response)
         except BaseException as excp:
             self.log.exception(excp)
             return {}
