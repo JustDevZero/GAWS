@@ -135,11 +135,15 @@ class InventoryInstances:
 
         self.extra_params = self.extra_params or {}
         NextToken = None
-        reservations = []
+        instances = []
 
         try:
             response = ec2.describe_instances(**self.extra_params)
             NextToken = response.get('NextToken')
+            reservations = response.get('Reservations', {}) or []
+            for reservation in reservations:
+                instances.extend(reservation.get('Instances', []))
+
         except BaseException as excp:
             self.log.exception(excp)
 
@@ -149,10 +153,12 @@ class InventoryInstances:
             try:
                 response = ec2.describe_instances(**self.extra_params)
                 NextToken = response.get('NextToken')
-                reservations.extend(response.get('Reservations'))
+                reservations = response.get('Reservations', {}) or []
+                for reservation in reservations:
+                    instances.extend(reservation.get('Instances', []))
             except BaseException as excp:
                 self.log.exception(excp)
-        return reservations
+        return instances
 
     def get_opted_regions(self):
         ec2 = boto3.client('ec2', os.environ.get('AWS_DEFAULT_REGION'))
