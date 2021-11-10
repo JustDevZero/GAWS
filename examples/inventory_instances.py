@@ -141,7 +141,7 @@ class InventoryInstances:
             response = ec2.describe_instances(**self.extra_params)
             NextToken = response.get('NextToken')
         except BaseException as excp:
-            LOGGER.exception(excp)
+            self.log.exception(excp)
 
         while NextToken:
             self.extra_params['NextToken'] = NextToken
@@ -151,7 +151,7 @@ class InventoryInstances:
                 NextToken = response.get('NextToken')
                 reservations.extend(response.get('Reservations'))
             except BaseException as excp:
-                LOGGER.exception(excp)
+                self.log.exception(excp)
         return reservations
 
     def get_opted_regions(self):
