@@ -38,7 +38,7 @@ class InventoryInstances:
         self.log.setLevel(logging.INFO)
         parser = argparse.ArgumentParser()
         parser.add_argument('--region', '-r', action='append', type=str, dest='regions', help='List of regions to be used, can be used multiple times.')
-        parser.add_argument('--external-id', '-e', type=str, dest='external_id', help='External ID provided by the client.')
+        parser.add_argument('--external-id', '-e', type=str, dest='external_id', help='External ID provided by the client.', required=False)
         parser.add_argument('--instance-id', '-i', action='append', type=str, dest='instance_ids', help='List of instance ids, can be used multiple times.')
         parser.add_argument('--filter', '-f', action='append', metavar="KEY=VALUE", nargs='+', dest='filters', help="""List of filters to use, example:
         network-interface.addresses.association.public-ip 1.1.1.1 or
