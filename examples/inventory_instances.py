@@ -12,7 +12,7 @@ from pathlib import Path
 import boto3
 
 
-logging.basicConfig(filename=sys.stdout, level=logging.INFO)
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 
 def try_int(value):
