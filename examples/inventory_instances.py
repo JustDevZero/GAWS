@@ -1,12 +1,14 @@
 import argparse
 import csv
+import datetime
 import json
 import logging
 import logging.handlers
 import os
 import sys
+from copy import deepcopy
 from pathlib import Path
-import datetime
+
 import boto3
 
 
@@ -25,7 +27,6 @@ class InventoryInstances:
     arguments = None
     log = logging.getLogger('inventory_instances')
     extra_params = None
-    caller_identity = None
     _credentials = None
 
     def __init__(self):
@@ -85,14 +86,8 @@ class InventoryInstances:
             return self._credentials
 
         sts = boto3.client('sts')
-        self.caller_identity = sts.get_caller_identity()
-        destination_account = os.environ.get('AWS_ACCOUNT_ID')
-        caller_account = os.environ.get('Account')
 
-        if caller_account == destination_account:
-            return {}
-
-        aws_role_arn = os.environ.get('AWS_ROLE_ARN')
+        aws_role_arn = os.environ.get('AWS_ASSUMED_ROLE_ARN')
         aws_role_session_name = os.environ.get('AWS_ROLE_SESSION_NAME')
 
         if not aws_role_arn:
@@ -266,11 +261,12 @@ class InventoryInstances:
 
         if file_name.endswith('.json'):
             with open(file_name, 'w') as json_file:
-                return json_file.write(json.dumps(intent=4))
+                json_file.write(json.dumps(intent=4))
+                return
 
         if file_name.endswith('.tsv'):
             with open(file_name, 'w') as json_file:
-                return self.export_as_csv(file_name,
+                self.export_as_csv(file_name,
                            exportable_data,
                            delimiter="\t",
                            ip_types={
@@ -280,10 +276,11 @@ class InventoryInstances:
                                'IPv6': total_ipv6_number,
 
                            })
+                return
 
         if file_name.endswith('.csv'):
             with open(file_name, 'w') as json_file:
-                return self.export_as_csv(file_name,
+                self.export_as_csv(file_name,
                            exportable_data,
                            delimiter=',',
                            ip_types={
@@ -293,10 +290,13 @@ class InventoryInstances:
                                'IPv6': total_ipv6_number,
 
                            })
-        exit('Output can only be tsv, csv or json.')
+                return
+        return('Output can only be tsv, csv or json.')
 
 
-
-if __name__ == '__main__':
+def main():
     inventory = InventoryInstances()
     inventory.check_invent()
+
+if __name__ == '__main__':
+    sys.exit(main())

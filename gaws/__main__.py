@@ -449,11 +449,11 @@ class GAWS:
         orig_env = deepcopy(os.environ)
 
         os.environ['AWS_PROFILE'] = profile
-        os.environ['AWS_ROLE_ARN'] = f"arn:aws:iam::{aws_account_id}:role/{role}"
+        os.environ['AWS_ASSUMED_ROLE_ARN'] = f"arn:aws:iam::{aws_account_id}:role/{role}"
         os.environ['AWS_ROLE_SESSION_NAME'] = user
         os.environ['AWS_REGION_NAME'] = region
         os.environ['AWS_ACCOUNT_ID'] = aws_account_id
-        os.environ['AWS_DEFAULT_DURATION'] = duration
+        os.environ['AWS_DEFAULT_DURATION'] = str(duration)
 
         command = deepcopy(self.command)
         command.extend(extra_parameters)
@@ -465,15 +465,9 @@ class GAWS:
         try:
             proc = subprocess.run(command,
                                   stdin=subprocess.PIPE,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE,
+                                  stdout=sys.stdout,
+                                  stderr=sys.stderr,
                                   env=os.environ)
-            stderr = proc.stderr.decode().strip()
-            stdout = proc.stdout.decode().strip()
-            if stderr:
-                self.log.error(stderr)
-            if stdout:
-                self.log.info(stdout)
         except subprocess.CalledProcessError as e:
             self.log.error(e)
             os.environ = orig_env
@@ -486,9 +480,12 @@ class GAWS:
         except BaseException as e:
             self.log.exception(e)
         os.environ = orig_env
+        return proc.returncode
 
     def iterate_clients(self):
 
+
+        return_codes = []
         for client in self.clients:
             role = self.args.gaws_content.get(client, 'role_name', fallback=self.default_role)
             regions = self.args.gaws_content.get(client, 'region', fallback=None)
@@ -540,7 +537,8 @@ class GAWS:
                 region_extra_parameters = self.args.gaws_content.get(client, f'{region}_extra_parameters', fallback='')
                 region_extra_parameters = shlex.split(region_extra_parameters) if region_extra_parameters else []
                 used_parameters = region_extra_parameters or extra_parameters
-                self.run_process(profile, user, role, region, aws_account_id, used_parameters, duration, expand_vars=expand_vars)
+                return_code = self.run_process(profile, user, role, region, aws_account_id, used_parameters, duration, expand_vars=expand_vars)
+                return_codes.append(return_code)
 
             self.previous_sp_id = sp_id
             self.previous_idp_id = idp_id
@@ -549,16 +547,18 @@ class GAWS:
             self.previous_user = user
             self.previous_role = role
 
+        return all([bool(x) for x in return_codes])
+
 
 def main():
     try:
         gl = GAWS()
         if not gl.command:
-            exit('No command provided')
-        gl.iterate_clients()
+            return 'No command provided'
+        return int(gl.iterate_clients())
     except KeyboardInterrupt:
-        exit('Interrupted by the user. Exiting.')
+        return 'Interrupted by the user. Exiting.'
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
