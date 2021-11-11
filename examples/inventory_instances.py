@@ -204,7 +204,7 @@ class InventoryInstances:
         total_private_ip_number = 0
         total_ipv6_number = 0
         total_carrier_ip_number = 0
-        exportable_data = {}
+        exportable_data = []
         all_instances = self.get_all_instances()
         for region_name, instances in all_instances.items():
             for instance in instances:
