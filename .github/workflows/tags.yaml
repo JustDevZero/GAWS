@@ -60,7 +60,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install bump2version
         bumpversion $OUTPUT
-        OUTPUT=$(cat gaws/VERSION)
+        OUTPUT=$(cat VERSION)
         echo "::set-output name=OUTPUT::$OUTPUT"
 
     - name: Push version
