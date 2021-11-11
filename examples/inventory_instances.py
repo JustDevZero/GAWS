@@ -25,6 +25,14 @@ def try_int(value):
 AWS_DEFAULT_DURATION = try_int(os.environ.get('AWS_DEFAULT_DURATION')) or 3200
 
 
+def tags_to_dict(tags):
+    return {
+        tag.get('Key'): tag.get('Value')
+        for tag in tags
+    }
+
+
+
 class InventoryInstances:
 
     arguments = None
@@ -183,7 +191,7 @@ class InventoryInstances:
     def export_as_csv(self, file_name, exportable_data, ip_types=None, delimiter=None):
         ip_types = ip_types or {}
         delimiter = delimiter or ','
-        headers = ['InstanceId', 'HostId', 'Region', 'AvailabilityZone']
+        headers = ['InstanceId', 'Name', 'HostId', 'InstanceType', 'Region', 'AvailabilityZone', 'State']
 
         for ip_type, quantity in ip_types.items():
             if not quantity:
@@ -212,11 +220,15 @@ class InventoryInstances:
                 private_ips = set()
                 ipv6_ips = set()
                 carrier_ips = set()
+                tags = tags_to_dict(instance.get('Tags', []))
                 inst = {
                     'InstanceId': instance['InstanceId'],
+                    'Name': tags.get('Name') or tags.get('name'),
                     'HostId': instance['Placement'].get('HostId'),
+                    'InstanceType': instance.get('InstanceType'),
                     'Region': region_name,
                     'AvailabilityZone': instance['Placement']['AvailabilityZone'],
+                    'State': instance['State'].get('Name')
                 }
 
                 for interface in instance.get('NetworkInterfaces', []):
