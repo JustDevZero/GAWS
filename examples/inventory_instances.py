@@ -119,8 +119,8 @@ class InventoryInstances:
                 DurationSeconds=AWS_DEFAULT_DURATION,
                 **extra_params
             )
-            self.log.info('Assumed role')
-            self.log.info(response)
+            self.log.debug('Assumed role')
+            self.log.debug(response)
         except BaseException as excp:
             self.log.exception(excp)
             return {}
