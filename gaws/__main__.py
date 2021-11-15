@@ -18,8 +18,35 @@ import aws_google_auth
 import botocore
 import botocore.session
 import keyring
+from botocore.exceptions import EndpointConnectionError
 
 EMAIL_REGEXP = re.compile(r'(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b)')
+
+AWS_REGIONS = [
+    'us-east-2',
+    'us-east-1',
+    'us-west-1',
+    'us-west-2',
+    'us-gov-west-1',
+    'us-gov-east-1',
+    'af-south-1',
+    'ap-east-1',
+    'ap-south-1',
+    'ap-northeast-3',
+    'ap-northeast-2',
+    'ap-southeast-1',
+    'ap-southeast-2',
+    'ap-northeast-1',
+    'ca-central-1',
+    'eu-central-1',
+    'eu-west-1',
+    'eu-west-2',
+    'eu-south-1',
+    'eu-west-3',
+    'eu-north-1',
+    'me-south-1',
+    'sa-east-1'
+]
 
 
 def ResolvePath(path_route):
@@ -47,6 +74,18 @@ def Preference(path_route):
         return path
     except BaseException:
         raise argparse.ArgumentTypeError(f'{path_route} is not a valid ini file.')
+
+
+def is_valid_region(region_name):
+    region_name = region_name or ''
+    region_name = region_name.lower()
+    return region_name in AWS_REGIONS
+
+
+def ValidRegionParam(region_name):
+    if not is_valid_region(region_name):
+        raise argparse.ArgumentTypeError(f'{region_name} region')
+    return region_name.lower()
 
 
 def is_true(data):
@@ -142,8 +181,8 @@ class GAWS:
         parser.add_argument('--idp-id', '-I', type=str, dest='idp_id', required=False, help='The IDP_ID from the Google SAML SSO')
         parser.add_argument('--user', '-u', type=str, dest='user', required=False, help='Your default gmail user')
         parser.add_argument('--account', '-a', type=str, dest='default_account', required=False, help='Your default aws account')
-        parser.add_argument('--region', '-r', type=str, dest='default_region', required=False, help='Your default aws region')
-        parser.add_argument('--sso-region', '-s', type=str, dest='default_sso_region', required=False, help='Your default sso region')
+        parser.add_argument('--region', '-r', type=ValidRegionParam, dest='default_region', required=False, help='Your default aws region')
+        parser.add_argument('--sso-region', '-s', type=ValidRegionParam, dest='default_sso_region', required=False, help='Your default sso region')
         parser.add_argument('--role', '-R', type=str, dest='default_role', required=False, help='Your default role')
         parser.add_argument('--duration', '-D', type=int, dest='duration', required=False, default=AWS_DEFAULT_DURATION)
         parser.add_argument('--use-profiles', dest="inject_profile", action='store_true', help='Use profiles instead of overwriting "default"')
@@ -186,7 +225,9 @@ class GAWS:
         self.default_idp_id = self.args.idp_id or self.preferences.get('gaws', 'idp_id', fallback=None)
         self.default_sp_id = self.args.sp_id or self.preferences.get('gaws', 'sp_id', fallback=None)
         self.default_region = self.args.default_region or self.preferences.get('gaws', 'region', fallback=None)
+        self.default_region = self.default_region if self.default_region else None
         self.default_sso_region = self.args.default_sso_region or self.preferences.get('gaws', 'sso_region', fallback=None)
+        self.default_sso_region = self.default_sso_region if self.default_sso_region else None
         self.default_account = self.args.default_account or self.preferences.get('gaws', 'account', fallback=None)
         self.default_role = self.args.default_role or self.preferences.get('gaws', 'role_name', fallback=None)
         self.default_duration = try_int(self.args.duration or self.preferences.get('gaws', 'duration', fallback=None))
@@ -266,11 +307,17 @@ class GAWS:
 
         while not self.default_region:
             self.default_region = input('Enter default region:\n')
-            self.default_region = self.default_region.strip()
+            self.default_region = self.default_region.strip() or ''
+            self.default_region = self.default_region.lower()
+            if not is_valid_region(self.default_region):
+                self.default_region = None
 
         while not self.default_sso_region:
             self.default_sso_region = input(f'Enter default SSO region (default "{self.default_region}"):\n')
-            self.default_sso_region = self.default_sso_region.strip() or self.default_region
+            self.default_sso_region = self.default_sso_region.strip() or ''
+            self.default_sso_region = self.default_sso_region.lower() or self.default_region
+            if not is_valid_region(self.default_sso_region):
+                self.default_sso_region = None
 
         while not self.default_account:
             self.default_account = input('Enter default account:\n')
@@ -429,6 +476,10 @@ class GAWS:
         except KeyboardInterrupt:
             os.environ = environ
             exit('Interrupted by the user. Exiting.')
+        except EndpointConnectionError as excp:
+            os.environ = environ
+            self.log.error(str(excp))
+            return False
         except BaseException as excp:
             output = str(excp)
             os.environ = environ
@@ -505,12 +556,18 @@ class GAWS:
             profile = 'default'
 
             if regions:
-                regions = [x.strip() for x in shlex.split(regions.lower())]
+                regions = [x.strip() for x in shlex.split(regions.lower()) if x.strip()]
             else:
                 regions = [self.default_region] if self.default_region else []
 
+            sso_region = sso_region if is_valid_region(sso_region) else None
+
             if not sso_region and regions:
                 sso_region = regions[0]
+
+            if not is_valid_region(sso_region):
+                self.log.error(f'{sso_region} is not a valid AWS region, skipping client.')
+                continue
 
             if self.args.inject_profile:
                 profile = client
@@ -534,6 +591,9 @@ class GAWS:
                 continue
 
             for region in regions:
+                if not is_valid_region(region):
+                    self.log.error(f'{region} is not a valid AWS region, skipping region.')
+                    continue
                 region_extra_parameters = self.args.gaws_content.get(client, f'{region}_extra_parameters', fallback='')
                 region_extra_parameters = shlex.split(region_extra_parameters) if region_extra_parameters else []
                 used_parameters = region_extra_parameters or extra_parameters
