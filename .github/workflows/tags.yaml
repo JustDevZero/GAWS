@@ -84,3 +84,9 @@ jobs:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         automatic_release_tag: "${{ steps.bumped_version.outputs.OUTPUT }}"
         prerelease: false
+
+    - name: Create a Pypi release
+      uses: yaananth/twine-upload@v1
+      env:
+        RUNNER: ${{ toJson(runner) }}
+        SECRETS: ${{ toJson(secrets) }}
