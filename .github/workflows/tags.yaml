@@ -86,7 +86,6 @@ jobs:
         prerelease: false
 
     - name: Create a Pypi release
-      uses: yaananth/twine-upload@v1
-      env:
-        RUNNER: ${{ toJson(runner) }}
-        SECRETS: ${{ toJson(secrets) }}
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.TOKEN }}
