@@ -85,7 +85,13 @@ jobs:
         automatic_release_tag: "${{ steps.bumped_version.outputs.OUTPUT }}"
         prerelease: false
 
+    - name: Build pypi release
+      # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+      run: |
+        python setup.py sdist bdist_wheel
+
     - name: Create a Pypi release
+      # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.TOKEN }}
