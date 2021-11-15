@@ -40,7 +40,7 @@ Create a virtualenv for python3.6 onwards, we tried with 3.9 and it worked like 
 
 ```source ~/.virtualenvs/gaws/bin/activate```
 
-```python -m pip install git+https://github.com/JustDevZero/GAWS.git```
+```python -m pip install GAWS```
 
 Now, add symbolic link somewhere in your path *gaws* command, for example:
 
