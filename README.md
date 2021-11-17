@@ -10,9 +10,13 @@ By using this you won't need to authenticate by your self multiple times as it w
 
 It's important that your accounts are onboared in the Google Single Sign On service.
 
-See this as an example of how to configure them:
+**Important Data**
 
-https://aws.amazon.com/blogs/security/how-to-use-g-suite-as-external-identity-provider-aws-sso/
+You will need to know Google's assigned Identity Provider ID, and the ID that they assign to the SAML service provider.
+
+Once you've set up the SAML SSO relationship between Google and AWS, you can find the SP ID by drilling into the Google Apps console, under Apps > SAML Apps > Settings for AWS SSO -- the URL will include a component that looks like ...#AppDetails:service=123456789012... -- that number is GOOGLE_SP_ID
+
+You can find the GOOGLE_IDP_ID, again from the admin console, via Security > Set up single sign-on (SSO) -- the SSO URL includes a string like https://accounts.google.com/o/saml2/idp?idpid=aBcD01AbC where the last bit (after the =) is the GOOGLE_IDP_ID.
 
 
 
@@ -20,6 +24,9 @@ https://aws.amazon.com/blogs/security/how-to-use-g-suite-as-external-identity-pr
 * For Python 3.6+
 * Changelog: https://github.com/JustDevZero/GAWS/releases
 * Code, issues, tests: https://github.com/JustDevZero/GAWS
+*
+
+This project uses https://github.com/cevoaustralia/aws-google-auth under the hood.
 
 
 ----
